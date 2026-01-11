@@ -25,8 +25,6 @@ router.get('/', verifyToken, (req, res) => {
     try {
         let stmt;
         if (req.user.role === 'sales') {
-            // Sales can see all or only assigned? "gestionarse desde el mismo aplicativo" - implies seeing them.
-            // Usually sales sees all available leads or their own. Let's return all for now to let them manage.
             stmt = db.prepare('SELECT * FROM leads ORDER BY created_at DESC');
         } else {
             stmt = db.prepare('SELECT * FROM leads ORDER BY created_at DESC');
@@ -34,20 +32,59 @@ router.get('/', verifyToken, (req, res) => {
 
         const leads = stmt.all();
 
-        // Calculate temperature on the fly
+        // Calculate temperature on the fly, but respect "Sold" overrides
         const now = new Date();
         const enrichedLeads = leads.map(lead => {
+            // IF ALREADY SOLD, KEEP IT SOLD
+            if (lead.status === 'Sold') {
+                return { ...lead, temperature: 'Sold' };
+            }
+
             const created = new Date(lead.created_at);
             const diffDays = (now - created) / (1000 * 60 * 60 * 24);
             let temp = 'Hot';
             if (diffDays > 2) temp = 'Warm';
             if (diffDays > 7) temp = 'Cold';
 
-            // Allow override if stored in DB (though we calculate it dynamically here as requested "calculate based on date")
             return { ...lead, temperature: temp };
         });
 
         res.json(enrichedLeads);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// EXPORT LEADS (Admin Only)
+router.get('/export', verifyToken, (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+
+    try {
+        const leads = db.prepare('SELECT * FROM leads ORDER BY created_at DESC').all();
+
+        // Simple CSV generation
+        const header = 'ID,Nombre,Apellido,Telefono,Fecha,Whatsapp,Llamada,Demo,Estado,Observaciones\n';
+        const rows = leads.map(lead => {
+            const clean = (text) => (text ? `"${text.replace(/"/g, '""')}"` : '');
+            return [
+                lead.id,
+                clean(lead.first_name),
+                clean(lead.last_name),
+                clean(lead.phone),
+                lead.created_at,
+                lead.answered_whatsapp ? 'Si' : 'No',
+                lead.answered_phone ? 'Si' : 'No',
+                lead.demo_scheduled ? 'Si' : 'No',
+                lead.status || 'Calculado',
+                clean(lead.observations)
+            ].join(',');
+        }).join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=leads_export.csv');
+        res.status(200).send(header + rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -84,7 +121,7 @@ router.post('/', verifyToken, (req, res) => {
 // UPDATE lead
 router.put('/:id', verifyToken, (req, res) => {
     const { id } = req.params;
-    const { first_name, last_name, phone, observations, answered_whatsapp, answered_phone, demo_scheduled } = req.body;
+    const { first_name, last_name, phone, observations, answered_whatsapp, answered_phone, demo_scheduled, status } = req.body;
 
     try {
         const stmt = db.prepare(`
@@ -95,7 +132,8 @@ router.put('/:id', verifyToken, (req, res) => {
                 observations = COALESCE(?, observations),
                 answered_whatsapp = COALESCE(?, answered_whatsapp),
                 answered_phone = COALESCE(?, answered_phone),
-                demo_scheduled = COALESCE(?, demo_scheduled)
+                demo_scheduled = COALESCE(?, demo_scheduled),
+                status = COALESCE(?, status)
             WHERE id = ?
         `);
 
@@ -104,6 +142,7 @@ router.put('/:id', verifyToken, (req, res) => {
             answered_whatsapp === undefined ? null : (answered_whatsapp ? 1 : 0),
             answered_phone === undefined ? null : (answered_phone ? 1 : 0),
             demo_scheduled === undefined ? null : (demo_scheduled ? 1 : 0),
+            status,
             id
         );
 

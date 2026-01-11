@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Phone, MessageCircle, Calendar, Save, Upload, FileSpreadsheet } from 'lucide-react';
+import { Plus, Phone, MessageCircle, Calendar, Save, Upload, FileSpreadsheet, Download, CheckCircle, Database } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useAuth } from '../context/AuthContext';
 
 export default function LeadsView() {
     const [leads, setLeads] = useState([]);
@@ -8,6 +9,7 @@ export default function LeadsView() {
     const [isBulk, setIsBulk] = useState(false);
     const [formData, setFormData] = useState({ first_name: '', last_name: '', phone: '', observations: '' });
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
 
     useEffect(() => {
         fetchLeads();
@@ -99,6 +101,40 @@ export default function LeadsView() {
         }
     };
 
+    const handleDownloadTemplate = () => {
+        const wb = XLSX.utils.book_new();
+        const ws_data = [
+            ["Nombre", "Apellido", "Telefono", "Observaciones"], // Header
+            ["Ejemplo Juan", "Ejemplo Perez", "3001234567", "Interesado en producto X"] // Example row
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        XLSX.utils.book_append_sheet(wb, ws, "Plantilla Leads");
+        XLSX.writeFile(wb, "plantilla_carga_leads.xlsx");
+    };
+
+    const handleExportDB = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/leads/export', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error('Error decargando');
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error(err);
+            alert('Error descargando la base de datos');
+        }
+    };
+
     const updateLead = async (id, field, value) => {
         // Optimistic update
         setLeads(leads.map(l => l.id === id ? { ...l, [field]: value } : l));
@@ -113,10 +149,19 @@ export default function LeadsView() {
                 },
                 body: JSON.stringify({ [field]: value }),
             });
+            // If status sold, refetch to ensure consistent state
+            if (field === 'status') fetchLeads();
         } catch (err) {
             console.error(err);
             fetchLeads(); // Revert on error
         }
+    };
+
+    const getStatusBadge = (temp) => {
+        if (temp === 'Sold') return <span className="badge" style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa' }}>💎 Vendido</span>;
+        if (temp === 'Hot') return <span className="badge badge-hot">🔥 Caliente</span>;
+        if (temp === 'Warm') return <span className="badge badge-warm">⛅ Tibio</span>;
+        return <span className="badge badge-cold">❄️ Frio</span>;
     };
 
     return (
@@ -124,8 +169,13 @@ export default function LeadsView() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>Gestión de Leads</h2>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    {user?.role === 'admin' && (
+                        <button onClick={handleExportDB} className="btn btn-secondary" style={{ borderColor: 'var(--success)', color: 'var(--success)' }}>
+                            <Database size={18} style={{ marginRight: '0.5rem' }} /> Descargar Base
+                        </button>
+                    )}
                     <button onClick={() => { setIsBulk(true); setShowForm(true); }} className="btn btn-secondary">
-                        <FileSpreadsheet size={18} style={{ marginRight: '0.5rem', color: 'var(--accent-primary)' }} /> Carga Masiva (Excel/CSV)
+                        <FileSpreadsheet size={18} style={{ marginRight: '0.5rem', color: 'var(--accent-primary)' }} /> Carga Masiva
                     </button>
                     <button onClick={() => { setIsBulk(false); setShowForm(true); }} className="btn btn-primary">
                         <Plus size={18} style={{ marginRight: '0.5rem' }} /> Nuevo Lead
@@ -138,9 +188,14 @@ export default function LeadsView() {
                     <h3 style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)' }}>{isBulk ? 'Importar Leads (Excel/CSV)' : 'Registrar Nuevo Lead'}</h3>
                     {isBulk ? (
                         <form onSubmit={handleBulkUpload}>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                                <button type="button" onClick={handleDownloadTemplate} className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
+                                    <Download size={14} style={{ marginRight: '0.5rem' }} /> Descargar Plantilla Excel
+                                </button>
+                            </div>
                             <div style={{ border: '2px dashed var(--bg-hover)', padding: '2rem', textAlign: 'center', borderRadius: 'var(--radius-md)', marginBottom: '1rem' }}>
                                 <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} style={{ color: 'var(--text-secondary)' }} />
-                                <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Formatos soportados: .xlsx, .csv. Columnas esperadas: Nombre, Telefono, Observaciones</p>
+                                <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Use la plantilla descargable para evitar errores.</p>
                             </div>
                             {formData.bulkData && <p style={{ color: 'var(--success)', marginBottom: '1rem' }}>✓ Archivo procesado listo para subir.</p>}
 
@@ -191,9 +246,18 @@ export default function LeadsView() {
                         </thead>
                         <tbody>
                             {leads.map(lead => (
-                                <tr key={lead.id} style={{ transition: 'background 0.2s' }}>
+                                <tr key={lead.id} style={{ transition: 'background 0.2s', opacity: lead.temperature === 'Sold' ? 0.8 : 1 }}>
                                     <td>
-                                        <span className={`badge badge-${lead.temperature.toLowerCase()}`}>{lead.temperature === 'Hot' ? '🔥 Caliente' : lead.temperature === 'Warm' ? '⛅ Tibio' : '❄️ Frio'}</span>
+                                        {getStatusBadge(lead.temperature)}
+                                        {lead.temperature !== 'Sold' && (
+                                            <button
+                                                title="Marcar como Vendido"
+                                                onClick={() => updateLead(lead.id, 'status', 'Sold')}
+                                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'block', marginTop: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.7rem', textDecoration: 'underline' }}
+                                            >
+                                                Marcar Vendido
+                                            </button>
+                                        )}
                                     </td>
                                     <td>
                                         <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{lead.first_name} {lead.last_name}</div>
