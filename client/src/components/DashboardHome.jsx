@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Users, Flame, Sun, Target, TrendingUp, Phone, Calendar, Clock } from 'lucide-react';
+import { Users, Flame, Sun, Target, TrendingUp, Phone, Calendar, Clock, DollarSign } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 export default function DashboardHome() {
@@ -11,6 +11,7 @@ export default function DashboardHome() {
         hot: 0,
         warm: 0,
         cold: 0,
+        sold: 0,
         conversionRate: 0,
         recentLeads: [],
         distribution: []
@@ -34,6 +35,9 @@ export default function DashboardHome() {
             const warm = leads.filter(l => l.temperature === 'Warm').length;
             const cold = leads.filter(l => l.temperature === 'Cold').length;
 
+            // Count Sold leads (either by temperature override or explicit status if we had one)
+            const sold = leads.filter(l => l.temperature === 'Sold' || l.status === 'Sold').length;
+
             const demos = leads.filter(l => l.demo_scheduled).length;
             const conversionRate = total > 0 ? Math.round((demos / total) * 100) : 0;
 
@@ -45,13 +49,15 @@ export default function DashboardHome() {
                 hot,
                 warm,
                 cold,
+                sold,
                 conversionRate,
                 recentLeads: sortedLeads.slice(0, 5),
                 distribution: [
+                    { name: 'Ventas (Sold)', value: sold, color: '#8b5cf6' }, // Purple
                     { name: 'Calientes (Hot)', value: hot, color: '#ef4444' }, // Red
                     { name: 'Tibios (Warm)', value: warm, color: '#f59e0b' }, // Amber
                     { name: 'Fríos (Cold)', value: cold, color: '#3b82f6' }  // Blue
-                ]
+                ].filter(d => d.value > 0) // Only show non-zero in chart
             });
         } catch (err) {
             console.error(err);
@@ -118,9 +124,9 @@ export default function DashboardHome() {
             {/* Stats Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
                 <StatCard title="Total de Leads" value={stats.total} icon={Users} color="#3b82f6" trend="+12% vs mes anterior" />
+                <StatCard title="Ventas Cerradas" value={stats.sold} icon={DollarSign} color="#8b5cf6" trend="Ganancia neta" />
                 <StatCard title="Oportunidades Calientes" value={stats.hot} icon={Flame} color="#ef4444" trend="+5 nuevos hoy" />
-                <StatCard title="En Seguimiento (Tibios)" value={stats.warm} icon={Sun} color="#f59e0b" />
-                <StatCard title="Tasa de Conversión (Leads -> Demos)" value={`${stats.conversionRate}%`} icon={Target} color="#10b981" trend="+2% esta semana" />
+                <StatCard title="Tasa de Conversión" value={`${stats.conversionRate}%`} icon={Target} color="#10b981" />
             </div>
 
             {/* Main Content Grid */}
