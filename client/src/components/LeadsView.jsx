@@ -356,75 +356,74 @@ export default function LeadsView() {
                                         )}
                                     </td>
                                     <td>
-                                        <td>
-                                            <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{lead.first_name} {lead.last_name}</div>
-                                            {/* WhatsApp Click-to-Chat */}
-                                            <a
-                                                href={`https://wa.me/${String(lead.phone).replace(/\.0$/, '').replace(/\D/g, '')}?text=${encodeURIComponent("Hola, sabemos que estas buscando una solucion para automatizar tus conversaciones y Teybot es la solución")}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none', marginTop: '0.25rem' }}
-                                                className="hover-accent"
-                                            >
-                                                <Phone size={12} style={{ color: '#22c55e' }} /> {String(lead.phone).replace(/\.0$/, '')}
-                                            </a>
-                                        </td>
-                                        <td style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                            {new Date(lead.created_at).toLocaleDateString()}
-                                            <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{new Date(lead.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <MessageCircle size={16} color="var(--success)" />
-                                                    <select
-                                                        className="select"
-                                                        style={{ padding: '0.25rem', fontSize: '0.875rem', width: 'auto' }}
-                                                        value={lead.answered_whatsapp ? "1" : "0"}
-                                                        onChange={(e) => updateLead(lead.id, 'answered_whatsapp', e.target.value === "1")}
-                                                    >
-                                                        <option value="0">No Contestó</option>
-                                                        <option value="1">Si Contestó</option>
-                                                    </select>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <Phone size={16} color="var(--accent-primary)" />
-                                                    <select
-                                                        className="select"
-                                                        style={{ padding: '0.25rem', fontSize: '0.875rem', width: 'auto' }}
-                                                        value={lead.answered_phone ? "1" : "0"}
-                                                        onChange={(e) => updateLead(lead.id, 'answered_phone', e.target.value === "1")}
-                                                    >
-                                                        <option value="0">No Contestó</option>
-                                                        <option value="1">Si Contestó</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
+                                        <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{lead.first_name} {lead.last_name}</div>
+                                        {/* WhatsApp Click-to-Chat */}
+                                        <a
+                                            href={`https://wa.me/${String(lead.phone).replace(/\.0$/, '').replace(/\D/g, '')}?text=${encodeURIComponent("Hola, sabemos que estas buscando una solucion para automatizar tus conversaciones y Teybot es la solución")}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none', marginTop: '0.25rem' }}
+                                            className="hover-accent"
+                                        >
+                                            <Phone size={12} style={{ color: '#22c55e' }} /> {String(lead.phone).replace(/\.0$/, '')}
+                                        </a>
+                                    </td>
+                                    <td style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                        {new Date(lead.created_at).toLocaleDateString()}
+                                        <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{new Date(lead.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <Calendar size={16} color={lead.demo_scheduled ? "var(--warning)" : "var(--text-secondary)"} />
+                                                <MessageCircle size={16} color="var(--success)" />
                                                 <select
                                                     className="select"
-                                                    style={{ padding: '0.25rem', fontSize: '0.875rem', width: 'auto', borderColor: lead.demo_scheduled ? 'var(--warning)' : '' }}
-                                                    value={lead.demo_scheduled ? "1" : "0"}
-                                                    onChange={(e) => updateLead(lead.id, 'demo_scheduled', e.target.value === "1")}
+                                                    style={{ padding: '0.25rem', fontSize: '0.875rem', width: 'auto' }}
+                                                    value={lead.answered_whatsapp ? "1" : "0"}
+                                                    onChange={(e) => updateLead(lead.id, 'answered_whatsapp', e.target.value === "1")}
                                                 >
-                                                    <option value="0">Sin Agendar</option>
-                                                    <option value="1">Agendada</option>
+                                                    <option value="0">No Contestó</option>
+                                                    <option value="1">Si Contestó</option>
                                                 </select>
                                             </div>
-                                        </td>
-                                        <td>
-                                            <textarea
-                                                className="input"
-                                                style={{ padding: '0.5rem', fontSize: '0.875rem', width: '100%', minWidth: '200px', resize: 'vertical', background: 'transparent' }}
-                                                defaultValue={lead.observations}
-                                                rows={3}
-                                                placeholder="Escribe observaciones aquí..."
-                                                onBlur={(e) => updateLead(lead.id, 'observations', e.target.value)}
-                                            />
-                                        </td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <Phone size={16} color="var(--accent-primary)" />
+                                                <select
+                                                    className="select"
+                                                    style={{ padding: '0.25rem', fontSize: '0.875rem', width: 'auto' }}
+                                                    value={lead.answered_phone ? "1" : "0"}
+                                                    onChange={(e) => updateLead(lead.id, 'answered_phone', e.target.value === "1")}
+                                                >
+                                                    <option value="0">No Contestó</option>
+                                                    <option value="1">Si Contestó</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <Calendar size={16} color={lead.demo_scheduled ? "var(--warning)" : "var(--text-secondary)"} />
+                                            <select
+                                                className="select"
+                                                style={{ padding: '0.25rem', fontSize: '0.875rem', width: 'auto', borderColor: lead.demo_scheduled ? 'var(--warning)' : '' }}
+                                                value={lead.demo_scheduled ? "1" : "0"}
+                                                onChange={(e) => updateLead(lead.id, 'demo_scheduled', e.target.value === "1")}
+                                            >
+                                                <option value="0">Sin Agendar</option>
+                                                <option value="1">Agendada</option>
+                                            </select>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <textarea
+                                            className="input"
+                                            style={{ padding: '0.5rem', fontSize: '0.875rem', width: '100%', minWidth: '200px', resize: 'vertical', background: 'transparent' }}
+                                            defaultValue={lead.observations}
+                                            rows={3}
+                                            placeholder="Escribe observaciones aquí..."
+                                            onBlur={(e) => updateLead(lead.id, 'observations', e.target.value)}
+                                        />
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
