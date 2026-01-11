@@ -16,11 +16,19 @@ app.use(express.json());
 initDb();
 
 // Routes
+const path = require('path');
+
+// Serve static files from React app
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// API Routes (Keep these before the catch-all)
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadRoutes);
 
-app.get('/', (req, res) => {
-    res.send('Lead Manager API is running');
+// The "catch-all" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
 app.listen(PORT, () => {
