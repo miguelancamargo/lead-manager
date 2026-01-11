@@ -184,4 +184,30 @@ router.post('/bulk', verifyToken, (req, res) => {
     }
 });
 
+// BULK DELETE (Admin Only)
+router.post('/delete', verifyToken, (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: 'No IDs provided' });
+    }
+
+    try {
+        const deleteMany = db.transaction((idsToDelete) => {
+            const stmt = db.prepare('DELETE FROM leads WHERE id = ?');
+            for (const id of idsToDelete) {
+                stmt.run(id);
+            }
+        });
+
+        deleteMany(ids);
+        res.json({ success: true, count: ids.length });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

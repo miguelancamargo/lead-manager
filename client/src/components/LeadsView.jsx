@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Phone, MessageCircle, Calendar, Save, Upload, FileSpreadsheet, Download, CheckCircle, Database } from 'lucide-react';
+import { Plus, Phone, MessageCircle, Calendar, Save, Upload, FileSpreadsheet, Download, CheckCircle, Database, Trash2, Search } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,6 +9,8 @@ export default function LeadsView() {
     const [isBulk, setIsBulk] = useState(false);
     const [formData, setFormData] = useState({ first_name: '', last_name: '', phone: '', observations: '' });
     const [loading, setLoading] = useState(true);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [saveStatus, setSaveStatus] = useState(''); // 'saving', 'saved', ''
     const { user } = useAuth();
 
     useEffect(() => {
@@ -135,9 +137,56 @@ export default function LeadsView() {
         }
     };
 
+    // Selection Logic
+    const toggleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedIds(leads.map(l => l.id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const toggleSelectOne = (id) => {
+        if (selectedIds.includes(id)) {
+            setSelectedIds(selectedIds.filter(sid => sid !== id));
+        } else {
+            setSelectedIds([...selectedIds, id]);
+        }
+    };
+
+    const handleDeleteSelected = async () => {
+        if (!confirm(`¿Estás seguro de ELIMINAR ${selectedIds.length} leads? Esta acción no se puede deshacer.`)) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/leads/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ ids: selectedIds }),
+            });
+
+            if (res.ok) {
+                setSelectedIds([]);
+                fetchLeads();
+                alert('Leads eliminados correctamente.');
+            } else {
+                alert('Error al eliminar.');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+
     const updateLead = async (id, field, value) => {
         // Optimistic update
         setLeads(leads.map(l => l.id === id ? { ...l, [field]: value } : l));
+
+        // Show saving status if it's observation
+        if (field === 'observations') setSaveStatus('saving');
 
         try {
             const token = localStorage.getItem('token');
@@ -151,9 +200,15 @@ export default function LeadsView() {
             });
             // If status sold, refetch to ensure consistent state
             if (field === 'status') fetchLeads();
+
+            if (field === 'observations') {
+                setSaveStatus('saved');
+                setTimeout(() => setSaveStatus(''), 2000);
+            }
         } catch (err) {
             console.error(err);
             fetchLeads(); // Revert on error
+            setSaveStatus('');
         }
     };
 
@@ -168,7 +223,16 @@ export default function LeadsView() {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>Gestión de Leads</h2>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    {/* Save Status Indicator */}
+                    {saveStatus === 'saved' && <span style={{ color: 'var(--success)', fontSize: '0.9rem', marginRight: '1rem', animation: 'fadeIn 0.3s' }}>✓ Guardado</span>}
+
+                    {user?.role === 'admin' && selectedIds.length > 0 && (
+                        <button onClick={handleDeleteSelected} className="btn" style={{ backgroundColor: 'var(--danger)', color: 'white', marginRight: '1rem' }}>
+                            <Trash2 size={18} style={{ marginRight: '0.5rem' }} /> Eliminar ({selectedIds.length})
+                        </button>
+                    )}
+
                     {user?.role === 'admin' && (
                         <button onClick={handleExportDB} className="btn btn-secondary" style={{ borderColor: 'var(--success)', color: 'var(--success)' }}>
                             <Database size={18} style={{ marginRight: '0.5rem' }} /> Descargar Base
@@ -236,6 +300,11 @@ export default function LeadsView() {
                     <table style={{ width: '100%' }}>
                         <thead>
                             <tr>
+                                {user?.role === 'admin' && (
+                                    <th style={{ width: '40px' }}>
+                                        <input type="checkbox" onChange={toggleSelectAll} checked={leads.length > 0 && selectedIds.length === leads.length} />
+                                    </th>
+                                )}
                                 <th style={{ width: '100px' }}>Estado</th>
                                 <th>Datos Personales</th>
                                 <th>Fecha Ingreso</th>
@@ -247,6 +316,15 @@ export default function LeadsView() {
                         <tbody>
                             {leads.map(lead => (
                                 <tr key={lead.id} style={{ transition: 'background 0.2s', opacity: lead.temperature === 'Sold' ? 0.8 : 1 }}>
+                                    {user?.role === 'admin' && (
+                                        <td>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.includes(lead.id)}
+                                                onChange={() => toggleSelectOne(lead.id)}
+                                            />
+                                        </td>
+                                    )}
                                     <td>
                                         {getStatusBadge(lead.temperature)}
                                         {lead.temperature !== 'Sold' && (
