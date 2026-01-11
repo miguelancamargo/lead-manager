@@ -24,7 +24,7 @@ export default function DashboardHome() {
     const fetchStats = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:3000/api/leads', {
+            const res = await fetch('/api/leads', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const leads = await res.json();

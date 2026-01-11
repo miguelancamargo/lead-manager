@@ -16,7 +16,7 @@ export default function LeadsView() {
     const fetchLeads = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:3000/api/leads', {
+            const res = await fetch('/api/leads', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -32,7 +32,7 @@ export default function LeadsView() {
         e.preventDefault();
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:3000/api/leads', {
+            const res = await fetch('/api/leads', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -81,7 +81,7 @@ export default function LeadsView() {
         try {
             const json = JSON.parse(formData.bulkData);
             const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:3000/api/leads/bulk', {
+            const res = await fetch('/api/leads/bulk', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -105,7 +105,7 @@ export default function LeadsView() {
 
         try {
             const token = localStorage.getItem('token');
-            await fetch(`http://localhost:3000/api/leads/${id}`, {
+            await fetch(`/api/leads/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
