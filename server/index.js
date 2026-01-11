@@ -27,7 +27,7 @@ app.use('/api/leads', leadRoutes);
 
 // The "catch-all" handler: for any request that doesn't
 // match one above, send back React's index.html file.
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
