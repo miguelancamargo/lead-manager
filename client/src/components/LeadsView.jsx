@@ -359,7 +359,10 @@ export default function LeadsView() {
                                         <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{lead.first_name} {lead.last_name}</div>
                                         {/* WhatsApp Click-to-Chat */}
                                         <a
-                                            href={`https://wa.me/${String(lead.phone).replace(/\.0$/, '').replace(/\D/g, '')}?text=${encodeURIComponent("Hola, sabemos que estas buscando una solucion para automatizar tus conversaciones y Teybot es la solución")}`}
+                                            href={`https://wa.me/${(() => {
+                                                let p = String(lead.phone).replace(/\.0$/, '').replace(/\D/g, '');
+                                                return (p.length === 10 && p.startsWith('3')) ? '57' + p : p;
+                                            })()}?text=${encodeURIComponent("Hola, sabemos que estas buscando una solucion para automatizar tus conversaciones y Teybot es la solución")}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', textDecoration: 'none', marginTop: '0.25rem' }}
